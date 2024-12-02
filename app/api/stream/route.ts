@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod"
+import { number, z } from "zod"
 import { prisma } from "../../lib/db";
-//@ts-ignore
-import { youtubesearchapi } from "youtube-search-api";
+
+const youtubesearchapi = require("youtube-search-api");
 
 const YT_REGEX = /^(?:(?:https?:)?\/\/)?(?:www\.)?(?:m\.)?(?:youtu(?:be)?\.com\/(?:v\/|embed\/|watch(?:\/|\?v=))|youtu\.be\/)((?:\w|-){11})(?:\S+)?$/;
 const createStreamType = z.object({
@@ -20,13 +20,17 @@ export async function POST(req : NextResponse){
         })
     }
     const extractedId = data.url.split('?v=')[1]
-    const res = youtubesearchapi.GetVideoDetails(extractedId);
-    console.log(res);
+    const res = await youtubesearchapi.GetVideoDetails(extractedId);
+    const thumbnails = res.thumbnail.thumbnails;
+    thumbnails.sort((a: {width:number},b: {width:number}) => a.width < b.width ? -1 : 1 );
     const stream = await prisma.stream.create({
         data : {
             userId : data.creatorId,
             url : data.url,
-            extractedId : extractedId
+            extractedId : extractedId,
+            title : res.title ?? "No Title",
+            smallImg : (thumbnails.length > 1 ? thumbnails[thumbnails.length - 2].url : thumbnails[thumbnails.length - 1].url) ?? "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQm0Dz-g-P7q-2fGiUKam9pE6plbkbAjg4I0g&s",
+            bigImg : thumbnails[thumbnails.length - 1].url ?? "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQm0Dz-g-P7q-2fGiUKam9pE6plbkbAjg4I0g&s"
         }
     })
     return NextResponse.json({
