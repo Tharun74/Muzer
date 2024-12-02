@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod"
 import { prisma } from "../../lib/db";
+//@ts-ignore
+import { youtubesearchapi } from "youtube-search-api";
 
-const YT_REGEX = new RegExp("^https:\/\/www\.youtube\.com\/watch\?v=dQw4w9WgXcQ$");
+const YT_REGEX = /^(?:(?:https?:)?\/\/)?(?:www\.)?(?:m\.)?(?:youtu(?:be)?\.com\/(?:v\/|embed\/|watch(?:\/|\?v=))|youtu\.be\/)((?:\w|-){11})(?:\S+)?$/;
 const createStreamType = z.object({
     creatorId : z.string(),
     url : z.string()
@@ -11,23 +13,29 @@ const createStreamType = z.object({
 export async function POST(req : NextResponse){
    try {
     const data = createStreamType.parse(await req.json());
-    const isYt = YT_REGEX.test(data.url)
+    const isYt = data.url.match(YT_REGEX)
     if(!isYt){
         return NextResponse.json({
             message : 'incorrect url format'
         })
     }
     const extractedId = data.url.split('?v=')[1]
-    await prisma.stream.create({
+    const res = youtubesearchapi.GetVideoDetails(extractedId);
+    console.log(res);
+    const stream = await prisma.stream.create({
         data : {
             userId : data.creatorId,
             url : data.url,
             extractedId : extractedId
         }
     })
+    return NextResponse.json({
+        message : 'Added Stream',
+        streamId : stream.id,
+    })
    } catch (error) {
     return NextResponse.json({
-        message : 'error while adding a stream'
+        error : `${error}`
     })
    }
 }
@@ -47,6 +55,5 @@ export async function GET( req : NextRequest ){
         return NextResponse.json({
             message : 'error fetching streams'
         })   
-    }
-    
+    }   
 }
