@@ -7,7 +7,7 @@ import Link from "next/link";
 export default function AppBar(){
     const session = useSession();
 
-    return <section className="border-b py-4">
+    return <section className="border-b border-gray-800 py-4 bg-gray-900 text-white">
         <div className="container">
            <div className="flex justify-between items-center">
             <Link href={'/'} className="font-bold text-lg text-purple-500">Muzer</Link>
@@ -16,4 +16,5 @@ export default function AppBar(){
         </div> 
         </div>
     </section>
+
 }

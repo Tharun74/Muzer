@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { number, z } from "zod"
+import { z } from "zod"
 import { prisma } from "../../lib/db";
 
 const youtubesearchapi = require("youtube-search-api");
